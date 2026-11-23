@@ -306,8 +306,22 @@ object LocalPipeline {
         val subject = { u: Float, v: Float -> 1f - Colors.smoothstep(0.35f, 0.65f, bg.sample(u, v)) }
         adj[Tool.BG_BLUR]?.let { op ->
             val radius = max(1, (max(buf.width, buf.height) * 0.022f * op.amount).roundToInt())
-            val blurred = Blur.boxRgb(buf.px, buf.width, buf.height, radius)
-            Retouch.compositeBackground(buf, blurred, 1f, subject)
+            // Blur a copy in which the subject is painted over with the average background colour,
+            // otherwise hair and clothes bleed into the blur and leave a halo around the person.
+            val w = buf.width; val h = buf.height
+            var sr = 0L; var sg = 0L; var sb = 0L; var n = 0L
+            val coverage = FloatArray(w * h)
+            for (y in 0 until h) for (x in 0 until w) {
+                val c = subject((x + 0.5f) / w, (y + 0.5f) / h)
+                coverage[y * w + x] = c
+                if (c < 0.1f) { val p = buf.px[y * w + x]; sr += Colors.r(p); sg += Colors.g(p); sb += Colors.b(p); n++ }
+            }
+            val source = if (n == 0L) buf.px else {
+                val mean = Colors.rgb((sr / n).toInt(), (sg / n).toInt(), (sb / n).toInt())
+                IntArray(w * h) { Colors.mix(buf.px[it], mean, coverage[it]) }
+            }
+            val blurred = Blur.boxRgb(source, w, h, radius)
+            Retouch.compositeBackground(buf, blurred, 1f) { u, v -> coverage[((v * h).toInt().coerceIn(0, h - 1)) * w + (u * w).toInt().coerceIn(0, w - 1)] }
         }
         adj[Tool.BG_REPLACE]?.let { op ->
             val backdrop = Backdrops.build(op, buf.width, buf.height, sources)
