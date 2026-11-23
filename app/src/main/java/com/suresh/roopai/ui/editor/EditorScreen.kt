@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -162,8 +164,10 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit, onOpenSettings: () -> 
     EditorTheme {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
+            // insets are applied by the top bar and the bottom panel themselves
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
         ) { pad ->
-            Column(Modifier.fillMaxSize().padding(pad)) {
+            Column(Modifier.fillMaxSize().padding(pad).imePadding()) {
                 TopBar(state, vm, onBack, save)
                 if (state.rendering || state.busy != Busy.NONE) LinearProgressIndicator(Modifier.fillMaxWidth().height(2.dp)) else Spacer(Modifier.height(2.dp))
 

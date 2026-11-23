@@ -88,7 +88,10 @@ enum class Tool(
     val minAmount get() = if (bipolar) -1f else 0f
 
     companion object {
-        fun of(category: Category): List<Tool> = entries.filter { it.category == category }
+        /** Tools shown under a category. Lipstick is listed under both Lips and Makeup. */
+        fun of(category: Category): List<Tool> = entries.filter {
+            it.category == category || (category == Category.MAKEUP && it == MAKEUP_LIPSTICK)
+        }
     }
 }
 

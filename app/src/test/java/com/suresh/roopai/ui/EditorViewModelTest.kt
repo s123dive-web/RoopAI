@@ -360,10 +360,10 @@ class EditorViewModelTest {
     @Test
     fun editsArePersistedAfterASettleDelay() = runTest {
         val vm = vm(); advanceUntilIdle()
-        assertTrue(gw.persisted.isEmpty())
+        assertEquals("opening stores the thumbnail once", 1, gw.persisted.size)
         vm.setAmount(Tool.SKIN_SMOOTH, 0.5f); vm.setAmount(Tool.SKIN_SMOOTH, 0.6f)
         advanceUntilIdle()
-        assertEquals("debounced into one write", 1, gw.persisted.size)
+        assertEquals("debounced into one write", 2, gw.persisted.size)
         assertEquals(vm.state.value.stack, gw.persisted.last())
     }
 

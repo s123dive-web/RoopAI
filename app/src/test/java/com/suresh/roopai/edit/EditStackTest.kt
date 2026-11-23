@@ -174,5 +174,10 @@ class EditStackTest {
             if (t.name.startsWith("ACC_")) assertTrue(t.name, t.variants.isNotEmpty() && t.hasColor)
         }
         assertEquals(10, Category.entries.count { it.ordinal < 10 })
+        assertTrue(Tool.MAKEUP_LIPSTICK in Tool.of(Category.MAKEUP) && Tool.MAKEUP_LIPSTICK in Tool.of(Category.LIPS))
+        val makeup = Tool.of(Category.MAKEUP)
+        for (t in listOf(Tool.MAKEUP_FOUNDATION, Tool.MAKEUP_BLUSH, Tool.MAKEUP_EYELINER, Tool.MAKEUP_KAJAL, Tool.MAKEUP_EYESHADOW)) {
+            assertTrue(t.name, t in makeup && t.hasColor)
+        }
     }
 }

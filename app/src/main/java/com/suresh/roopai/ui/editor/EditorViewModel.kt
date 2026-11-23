@@ -99,6 +99,8 @@ class EditorViewModel @Inject constructor(
                 refreshCloudStatus()
                 refreshFaces()
                 render()
+                // gives a freshly imported photo its thumbnail for Home and History
+                schedulePersist()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
