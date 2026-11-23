@@ -1,0 +1,64 @@
+name: Android CI
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Lint, unit tests, assemble
+        run: ./gradlew lint testDebugUnitTest assembleDebug --stacktrace
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk "RoopAI-v1.0.${{ github.run_number }}.apk"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RoopAI-v1.0.${{ github.run_number }}
+          path: RoopAI-v1.0.${{ github.run_number }}.apk
+
+      - name: Upload lint and test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: |
+            app/build/reports
+          if-no-files-found: ignore
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v1.0.${{ github.run_number }}" \
+            "RoopAI-v1.0.${{ github.run_number }}.apk" \
+            --target "${{ github.sha }}" \
+            --title "RoopAI v1.0.${{ github.run_number }}" \
+            --notes "Automated build from ${{ github.sha }}. Install RoopAI-v1.0.${{ github.run_number }}.apk (debug-signed)."
