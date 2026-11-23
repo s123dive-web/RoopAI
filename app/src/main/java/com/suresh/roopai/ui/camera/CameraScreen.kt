@@ -23,8 +23,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Cameraswitch
-import androidx.compose.material.icons.filled.NoPhotography
+import com.suresh.roopai.ui.icons.Cameraswitch
+import com.suresh.roopai.ui.icons.NoPhotography
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton

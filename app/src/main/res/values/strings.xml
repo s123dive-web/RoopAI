@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">RoopAI</string>
+    <string name="edit_in_app">Edit in RoopAI</string>
 </resources>

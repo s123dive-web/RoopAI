@@ -21,6 +21,10 @@ android {
         versionCode = 1000 + ciRunNumber
         versionName = "1.0.$ciRunNumber"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        ndk {
+            // phones and tablets (arm) plus 64-bit emulators / Chromebooks; 32-bit x86 is dropped to save 20 MB
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+        }
     }
 
     buildTypes {
@@ -41,6 +45,8 @@ android {
     }
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        // compress native libraries inside the APK: about 30 MB smaller download
+        jniLibs.useLegacyPackaging = true
     }
     lint {
         abortOnError = true
@@ -53,7 +59,8 @@ android {
         unitTests.all { test ->
             // forwards -Droopai.visual.* to the optional VisualHarnessTest
             System.getProperties().forEach { (k, v) ->
-                if (k.toString().startsWith("roopai.")) test.systemProperty(k.toString(), v)
+                val key = k.toString()
+                if (key.startsWith("roopai.") || key.startsWith("robolectric.")) test.systemProperty(key, v)
             }
             test.maxHeapSize = "2g"
             test.testLogging.showStandardStreams = System.getProperty("roopai.visual.out") != null

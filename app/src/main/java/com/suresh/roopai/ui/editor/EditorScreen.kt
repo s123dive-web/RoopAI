@@ -36,15 +36,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Redo
-import androidx.compose.material.icons.automirrored.filled.RotateLeft
-import androidx.compose.material.icons.automirrored.filled.RotateRight
-import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.filled.Compare
+import com.suresh.roopai.ui.icons.Redo
+import com.suresh.roopai.ui.icons.RotateLeft
+import com.suresh.roopai.ui.icons.RotateRight
+import com.suresh.roopai.ui.icons.Undo
+import com.suresh.roopai.ui.icons.Compare
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Flip
-import androidx.compose.material.icons.filled.RestartAlt
-import androidx.compose.material.icons.filled.SaveAlt
+import com.suresh.roopai.ui.icons.Flip
+import com.suresh.roopai.ui.icons.RestartAlt
+import com.suresh.roopai.ui.icons.SaveAlt
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
@@ -69,6 +69,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -78,6 +79,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -99,7 +101,11 @@ import com.suresh.roopai.engine.cloud.CloudPresets
 import com.suresh.roopai.engine.cloud.PromptBuilder
 import com.suresh.roopai.ui.common.AiBadge
 import com.suresh.roopai.ui.theme.EditorTheme
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+
+const val TAG_CATEGORIES = "categories"
+const val TAG_TOOLS = "tools"
 
 @Composable
 fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit, onOpenSettings: () -> Unit) {
@@ -109,6 +115,9 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit, onOpenSettings: () -> 
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.onResume() }
 
+    // Events are consumed immediately; the snackbar runs in its own scope so that consuming the
+    // event (which restarts this effect) does not cancel it.
+    val scope = rememberCoroutineScope()
     LaunchedEffect(state.event) {
         when (val e = state.event) {
             is EditorEvent.Share -> {
@@ -119,9 +128,19 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit, onOpenSettings: () -> 
                     clipData = android.content.ClipData.newRawUri("RoopAI", e.uri.toUri())
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                try { context.startActivity(Intent.createChooser(send, "Share photo")) } catch (_: Exception) { snackbar.showSnackbar("No app can share this photo.") }
+                try {
+                    context.startActivity(Intent.createChooser(send, "Share photo"))
+                } catch (_: Exception) {
+                    scope.launch { snackbar.showSnackbar("No app can share this photo.") }
+                }
             }
-            is EditorEvent.Message -> { vm.consumeEvent(); snackbar.showSnackbar(e.text) }
+            is EditorEvent.Message -> {
+                vm.consumeEvent()
+                scope.launch {
+                    snackbar.currentSnackbarData?.dismiss()
+                    snackbar.showSnackbar(e.text)
+                }
+            }
             null -> Unit
         }
     }
@@ -142,7 +161,6 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit, onOpenSettings: () -> 
 
     EditorTheme {
         Scaffold(
-            snackbarHost = { SnackbarHost(snackbar) },
             containerColor = MaterialTheme.colorScheme.background,
         ) { pad ->
             Column(Modifier.fillMaxSize().padding(pad)) {
@@ -175,6 +193,8 @@ fun EditorScreen(vm: EditorViewModel, onBack: () -> Unit, onOpenSettings: () -> 
                         }
                     }
                     state.cloudRunning?.let { title -> CloudProgress(title, state.cloud, vm::cancelCloud) }
+                    // inside the image area so messages never cover the tool and category rows
+                    SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
                 }
 
                 if (!state.loading && state.fatalError == null) {
@@ -421,7 +441,7 @@ private fun ToolRow(state: EditorUiState, vm: EditorViewModel) {
         contentPadding = PaddingValues(horizontal = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag(TAG_TOOLS),
     ) {
         items(tools, key = { it.name }) { tool ->
             val active = state.stack.adjust(tool) != null
@@ -456,7 +476,7 @@ private fun PresetChip(p: CloudPreset, state: EditorUiState, vm: EditorViewModel
 private fun CategoryBar(selected: Category, onSelect: (Category) -> Unit) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 8.dp),
-        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerHigh).testTag(TAG_CATEGORIES),
     ) {
         items(Category.entries, key = { it.name }) { c ->
             val isSelected = c == selected
