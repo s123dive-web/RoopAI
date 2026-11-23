@@ -45,7 +45,7 @@ sealed class EditException(message: String, cause: Throwable? = null) : Exceptio
     class Timeout(cause: Throwable? = null) : EditException("The AI service took too long to answer. Try again.", cause)
     class Blocked(detail: String = "") : EditException("The AI service declined this edit." + suffix(detail))
     class ModelNotFound(model: String) : EditException("Model \"$model\" is not available for this key. Pick another model in Settings.")
-    class Server(code: Int, detail: String = "") : EditException("The AI service returned an error ($code)." + suffix(detail))
+    class Server(val code: Int, detail: String = "") : EditException("The AI service returned an error ($code)." + suffix(detail))
     class BadResponse(detail: String = "") : EditException("The AI service did not return an image." + suffix(detail))
     class OutOfMemory : EditException("Not enough memory for this photo. Try a lower output quality.")
     class Unreadable(detail: String = "") : EditException("This image could not be opened." + suffix(detail))
