@@ -49,6 +49,14 @@ android {
     }
     testOptions {
         unitTests.isReturnDefaultValues = true
+        unitTests.all { test ->
+            // forwards -Droopai.visual.* to the optional VisualHarnessTest
+            System.getProperties().forEach { (k, v) ->
+                if (k.toString().startsWith("roopai.")) test.systemProperty(k.toString(), v)
+            }
+            test.maxHeapSize = "2g"
+            test.testLogging.showStandardStreams = System.getProperty("roopai.visual.out") != null
+        }
     }
 }
 
